@@ -1,0 +1,1275 @@
+{\rtf1\ansi\ansicpg1252\deff0\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
+{\colortbl ;\red0\green0\blue255;}
+{\*\generator Msftedit 5.41.21.2510;}\viewkind4\uc1\pard\sa200\sl276\slmult1\lang9\f0\fs22    <!doctype html>\par
+\par
+<html>\par
+<head>\par
+  <link rel="shortcut icon" href="static/images/favicon.ico" type="image/x-icon">\par
+  <title>xhrio.js (Closure Library API Documentation - JavaScript)</title>\par
+  <link rel="stylesheet" href="static/css/base.css">\par
+  <link rel="stylesheet" href="static/css/doc.css">\par
+  <link rel="stylesheet" href="static/css/sidetree.css">\par
+  <link rel="stylesheet" href="static/css/prettify.css">\par
+\par
+  <script>\par
+     var _staticFilePath = "static/";\par
+     var _typeTreeName = "goog";\par
+     var _fileTreeName = "Source";\par
+  </script>\par
+\par
+  <script src="static/js/doc.js">\par
+  </script>\par
+\par
+\par
+  <meta charset="utf8">\par
+</head>\par
+\par
+<body onload="grokdoc.onLoad();">\par
+\par
+<div id="header">\par
+  <div class="g-section g-tpl-50-50 g-split">\par
+    <div class="g-unit g-first">\par
+      <a id="logo" href="index.html">Closure Library API Documentation</a>\par
+    </div>\par
+\par
+    <div class="g-unit">\par
+      <div class="g-c">\par
+        <strong>Go to class or {\field{\*\fldinst{HYPERLINK "file:</strong"}}{\fldrslt{\ul\cf1 file:</strong}}}\f0\fs22 >\par
+        <input type="text" id="ac">\par
+      </div>\par
+    </div>\par
+  </div>\par
+</div>\par
+\par
+<div class="clear"></div>\par
+\par
+<h2><a href="local_closure_goog_net_xhrio.js.html">xhrio.js</a></h2>\par
+\par
+<pre class="prettyprint lang-js">\par
+<a name="line1"></a>// Copyright 2006 The Closure Library Authors. All Rights Reserved.\par
+<a name="line2"></a>//\par
+<a name="line3"></a>// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);\par
+<a name="line4"></a>// you may not use this file except in compliance with the License.\par
+<a name="line5"></a>// You may obtain a copy of the License at\par
+<a name="line6"></a>//\par
+<a name="line7"></a>//      {\field{\*\fldinst{HYPERLINK "http://www.apache.org/licenses/LICENSE-2.0"}}{\fldrslt{\ul\cf1 http://www.apache.org/licenses/LICENSE-2.0}}}\f0\fs22\par
+<a name="line8"></a>//\par
+<a name="line9"></a>// Unless required by applicable law or agreed to in writing, software\par
+<a name="line10"></a>// distributed under the License is distributed on an &quot;AS-IS&quot; BASIS,\par
+<a name="line11"></a>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\par
+<a name="line12"></a>// See the License for the specific language governing permissions and\par
+<a name="line13"></a>// limitations under the License.\par
+<a name="line14"></a>\par
+<a name="line15"></a>/**\par
+<a name="line16"></a> * @fileoverview Wrapper class for handling XmlHttpRequests.\par
+<a name="line17"></a> *\par
+<a name="line18"></a> * One off requests can be sent through goog.net.XhrIo.send() or an\par
+<a name="line19"></a> * instance can be created to send multiple requests.  Each request uses its\par
+<a name="line20"></a> * own XmlHttpRequest object and handles clearing of the event callback to\par
+<a name="line21"></a> * ensure no leaks.\par
+<a name="line22"></a> *\par
+<a name="line23"></a> * XhrIo is event based, it dispatches events when a request finishes, fails or\par
+<a name="line24"></a> * succeeds or when the ready-state changes. The ready-state or timeout event\par
+<a name="line25"></a> * fires first, followed by a generic completed event. Then the abort, error,\par
+<a name="line26"></a> * or success event is fired as appropriate. Lastly, the ready event will fire\par
+<a name="line27"></a> * to indicate that the object may be used to make another request.\par
+<a name="line28"></a> *\par
+<a name="line29"></a> * The error event may also be called before completed and\par
+<a name="line30"></a> * ready-state-change if the XmlHttpRequest.open() or .send() methods throw.\par
+<a name="line31"></a> *\par
+<a name="line32"></a> * This class does not support multiple requests, queuing, or prioritization.\par
+<a name="line33"></a> *\par
+<a name="line34"></a> * Tested = IE6, FF1.5, Safari, Opera 8.5\par
+<a name="line35"></a> *\par
+<a name="line36"></a> * TODO(user): Error cases aren&#39;t playing nicely in Safari.\par
+<a name="line37"></a> *\par
+<a name="line38"></a> */\par
+<a name="line39"></a>\par
+<a name="line40"></a>\par
+<a name="line41"></a>goog.provide(&#39;goog.net.XhrIo&#39;);\par
+<a name="line42"></a>goog.provide(&#39;goog.net.XhrIo.ResponseType&#39;);\par
+<a name="line43"></a>\par
+<a name="line44"></a>goog.require(&#39;goog.Timer&#39;);\par
+<a name="line45"></a>goog.require(&#39;goog.array&#39;);\par
+<a name="line46"></a>goog.require(&#39;goog.debug.entryPointRegistry&#39;);\par
+<a name="line47"></a>goog.require(&#39;goog.events.EventTarget&#39;);\par
+<a name="line48"></a>goog.require(&#39;goog.json&#39;);\par
+<a name="line49"></a>goog.require(&#39;goog.log&#39;);\par
+<a name="line50"></a>goog.require(&#39;goog.net.ErrorCode&#39;);\par
+<a name="line51"></a>goog.require(&#39;goog.net.EventType&#39;);\par
+<a name="line52"></a>goog.require(&#39;goog.net.HttpStatus&#39;);\par
+<a name="line53"></a>goog.require(&#39;goog.net.XmlHttp&#39;);\par
+<a name="line54"></a>goog.require(&#39;goog.object&#39;);\par
+<a name="line55"></a>goog.require(&#39;goog.string&#39;);\par
+<a name="line56"></a>goog.require(&#39;goog.structs&#39;);\par
+<a name="line57"></a>goog.require(&#39;goog.structs.Map&#39;);\par
+<a name="line58"></a>goog.require(&#39;goog.uri.utils&#39;);\par
+<a name="line59"></a>goog.require(&#39;goog.userAgent&#39;);\par
+<a name="line60"></a>\par
+<a name="line61"></a>\par
+<a name="line62"></a>\par
+<a name="line63"></a>/**\par
+<a name="line64"></a> * Basic class for handling XMLHttpRequests.\par
+<a name="line65"></a> * @param \{goog.net.XmlHttpFactory=\} opt_xmlHttpFactory Factory to use when\par
+<a name="line66"></a> *     creating XMLHttpRequest objects.\par
+<a name="line67"></a> * @constructor\par
+<a name="line68"></a> * @extends \{goog.events.EventTarget\}\par
+<a name="line69"></a> */\par
+<a name="line70"></a>goog.net.XhrIo = function(opt_xmlHttpFactory) \{\par
+<a name="line71"></a>  goog.net.XhrIo.base(this, &#39;constructor&#39;);\par
+<a name="line72"></a>\par
+<a name="line73"></a>  /**\par
+<a name="line74"></a>   * Map of default headers to add to every request, use:\par
+<a name="line75"></a>   * XhrIo.headers.set(name, value)\par
+<a name="line76"></a>   * @type \{!goog.structs.Map\}\par
+<a name="line77"></a>   */\par
+<a name="line78"></a>  this.headers = new goog.structs.Map();\par
+<a name="line79"></a>\par
+<a name="line80"></a>  /**\par
+<a name="line81"></a>   * Optional XmlHttpFactory\par
+<a name="line82"></a>   * @private \{goog.net.XmlHttpFactory\}\par
+<a name="line83"></a>   */\par
+<a name="line84"></a>  this.xmlHttpFactory_ = opt_xmlHttpFactory || null;\par
+<a name="line85"></a>\par
+<a name="line86"></a>  /**\par
+<a name="line87"></a>   * Whether XMLHttpRequest is active.  A request is active from the time send()\par
+<a name="line88"></a>   * is called until onReadyStateChange() is complete, or error() or abort()\par
+<a name="line89"></a>   * is called.\par
+<a name="line90"></a>   * @private \{boolean\}\par
+<a name="line91"></a>   */\par
+<a name="line92"></a>  this.active_ = false;\par
+<a name="line93"></a>\par
+<a name="line94"></a>  /**\par
+<a name="line95"></a>   * The XMLHttpRequest object that is being used for the transfer.\par
+<a name="line96"></a>   * @private \{?goog.net.XhrLike.OrNative\}\par
+<a name="line97"></a>   */\par
+<a name="line98"></a>  this.xhr_ = null;\par
+<a name="line99"></a>\par
+<a name="line100"></a>  /**\par
+<a name="line101"></a>   * The options to use with the current XMLHttpRequest object.\par
+<a name="line102"></a>   * @private \{Object\}\par
+<a name="line103"></a>   */\par
+<a name="line104"></a>  this.xhrOptions_ = null;\par
+<a name="line105"></a>\par
+<a name="line106"></a>  /**\par
+<a name="line107"></a>   * Last URL that was requested.\par
+<a name="line108"></a>   * @private \{string|goog.Uri\}\par
+<a name="line109"></a>   */\par
+<a name="line110"></a>  this.lastUri_ = &#39;&#39;;\par
+<a name="line111"></a>\par
+<a name="line112"></a>  /**\par
+<a name="line113"></a>   * Method for the last request.\par
+<a name="line114"></a>   * @private \{string\}\par
+<a name="line115"></a>   */\par
+<a name="line116"></a>  this.lastMethod_ = &#39;&#39;;\par
+<a name="line117"></a>\par
+<a name="line118"></a>  /**\par
+<a name="line119"></a>   * Last error code.\par
+<a name="line120"></a>   * @private \{!goog.net.ErrorCode\}\par
+<a name="line121"></a>   */\par
+<a name="line122"></a>  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;\par
+<a name="line123"></a>\par
+<a name="line124"></a>  /**\par
+<a name="line125"></a>   * Last error message.\par
+<a name="line126"></a>   * @private \{Error|string\}\par
+<a name="line127"></a>   */\par
+<a name="line128"></a>  this.lastError_ = &#39;&#39;;\par
+<a name="line129"></a>\par
+<a name="line130"></a>  /**\par
+<a name="line131"></a>   * Used to ensure that we don&#39;t dispatch an multiple ERROR events. This can\par
+<a name="line132"></a>   * happen in IE when it does a synchronous load and one error is handled in\par
+<a name="line133"></a>   * the ready statte change and one is handled due to send() throwing an\par
+<a name="line134"></a>   * exception.\par
+<a name="line135"></a>   * @private \{boolean\}\par
+<a name="line136"></a>   */\par
+<a name="line137"></a>  this.errorDispatched_ = false;\par
+<a name="line138"></a>\par
+<a name="line139"></a>  /**\par
+<a name="line140"></a>   * Used to make sure we don&#39;t fire the complete event from inside a send call.\par
+<a name="line141"></a>   * @private \{boolean\}\par
+<a name="line142"></a>   */\par
+<a name="line143"></a>  this.inSend_ = false;\par
+<a name="line144"></a>\par
+<a name="line145"></a>  /**\par
+<a name="line146"></a>   * Used in determining if a call to \{@link #onReadyStateChange_\} is from\par
+<a name="line147"></a>   * within a call to this.xhr_.open.\par
+<a name="line148"></a>   * @private \{boolean\}\par
+<a name="line149"></a>   */\par
+<a name="line150"></a>  this.inOpen_ = false;\par
+<a name="line151"></a>\par
+<a name="line152"></a>  /**\par
+<a name="line153"></a>   * Used in determining if a call to \{@link #onReadyStateChange_\} is from\par
+<a name="line154"></a>   * within a call to this.xhr_.abort.\par
+<a name="line155"></a>   * @private \{boolean\}\par
+<a name="line156"></a>   */\par
+<a name="line157"></a>  this.inAbort_ = false;\par
+<a name="line158"></a>\par
+<a name="line159"></a>  /**\par
+<a name="line160"></a>   * Number of milliseconds after which an incomplete request will be aborted\par
+<a name="line161"></a>   * and a \{@link goog.net.EventType.TIMEOUT\} event raised; 0 means no timeout\par
+<a name="line162"></a>   * is set.\par
+<a name="line163"></a>   * @private \{number\}\par
+<a name="line164"></a>   */\par
+<a name="line165"></a>  this.timeoutInterval_ = 0;\par
+<a name="line166"></a>\par
+<a name="line167"></a>  /**\par
+<a name="line168"></a>   * Timer to track request timeout.\par
+<a name="line169"></a>   * @private \{?number\}\par
+<a name="line170"></a>   */\par
+<a name="line171"></a>  this.timeoutId_ = null;\par
+<a name="line172"></a>\par
+<a name="line173"></a>  /**\par
+<a name="line174"></a>   * The requested type for the response. The empty string means use the default\par
+<a name="line175"></a>   * XHR behavior.\par
+<a name="line176"></a>   * @private \{goog.net.XhrIo.ResponseType\}\par
+<a name="line177"></a>   */\par
+<a name="line178"></a>  this.responseType_ = goog.net.XhrIo.ResponseType.DEFAULT;\par
+<a name="line179"></a>\par
+<a name="line180"></a>  /**\par
+<a name="line181"></a>   * Whether a &quot;credentialed&quot; request is to be sent (one that is aware of\par
+<a name="line182"></a>   * cookies and authentication). This is applicable only for cross-domain\par
+<a name="line183"></a>   * requests and more recent browsers that support this part of the HTTP Access\par
+<a name="line184"></a>   * Control standard.\par
+<a name="line185"></a>   *\par
+<a name="line186"></a>   * @see {\field{\*\fldinst{HYPERLINK "http://www.w3.org/TR/XMLHttpRequest/#the-withcredentials-attribute"}}{\fldrslt{\ul\cf1 http://www.w3.org/TR/XMLHttpRequest/#the-withcredentials-attribute}}}\f0\fs22\par
+<a name="line187"></a>   *\par
+<a name="line188"></a>   * @private \{boolean\}\par
+<a name="line189"></a>   */\par
+<a name="line190"></a>  this.withCredentials_ = false;\par
+<a name="line191"></a>\par
+<a name="line192"></a>  /**\par
+<a name="line193"></a>   * True if we can use XMLHttpRequest&#39;s timeout directly.\par
+<a name="line194"></a>   * @private \{boolean\}\par
+<a name="line195"></a>   */\par
+<a name="line196"></a>  this.useXhr2Timeout_ = false;\par
+<a name="line197"></a>\};\par
+<a name="line198"></a>goog.inherits(goog.net.XhrIo, goog.events.EventTarget);\par
+<a name="line199"></a>\par
+<a name="line200"></a>\par
+<a name="line201"></a>/**\par
+<a name="line202"></a> * Response types that may be requested for XMLHttpRequests.\par
+<a name="line203"></a> * @enum \{string\}\par
+<a name="line204"></a> * @see {\field{\*\fldinst{HYPERLINK "http://www.w3.org/TR/XMLHttpRequest/#the-responsetype-attribute"}}{\fldrslt{\ul\cf1 http://www.w3.org/TR/XMLHttpRequest/#the-responsetype-attribute}}}\f0\fs22\par
+<a name="line205"></a> */\par
+<a name="line206"></a>goog.net.XhrIo.ResponseType = \{\par
+<a name="line207"></a>  DEFAULT: &#39;&#39;,\par
+<a name="line208"></a>  TEXT: &#39;text&#39;,\par
+<a name="line209"></a>  DOCUMENT: &#39;document&#39;,\par
+<a name="line210"></a>  // Not supported as of Chrome 10.0.612.1 dev\par
+<a name="line211"></a>  BLOB: &#39;blob&#39;,\par
+<a name="line212"></a>  ARRAY_BUFFER: &#39;arraybuffer&#39;\par
+<a name="line213"></a>\};\par
+<a name="line214"></a>\par
+<a name="line215"></a>\par
+<a name="line216"></a>/**\par
+<a name="line217"></a> * A reference to the XhrIo logger\par
+<a name="line218"></a> * @private \{goog.debug.Logger\}\par
+<a name="line219"></a> * @const\par
+<a name="line220"></a> */\par
+<a name="line221"></a>goog.net.XhrIo.prototype.logger_ =\par
+<a name="line222"></a>    goog.log.getLogger(&#39;goog.net.XhrIo&#39;);\par
+<a name="line223"></a>\par
+<a name="line224"></a>\par
+<a name="line225"></a>/**\par
+<a name="line226"></a> * The Content-Type HTTP header name\par
+<a name="line227"></a> * @type \{string\}\par
+<a name="line228"></a> */\par
+<a name="line229"></a>goog.net.XhrIo.CONTENT_TYPE_HEADER = &#39;Content-Type&#39;;\par
+<a name="line230"></a>\par
+<a name="line231"></a>\par
+<a name="line232"></a>/**\par
+<a name="line233"></a> * The pattern matching the &#39;http&#39; and &#39;https&#39; URI schemes\par
+<a name="line234"></a> * @type \{!RegExp\}\par
+<a name="line235"></a> */\par
+<a name="line236"></a>goog.net.XhrIo.HTTP_SCHEME_PATTERN = /^https?$/i;\par
+<a name="line237"></a>\par
+<a name="line238"></a>\par
+<a name="line239"></a>/**\par
+<a name="line240"></a> * The methods that typically come along with form data.  We set different\par
+<a name="line241"></a> * headers depending on whether the HTTP action is one of these.\par
+<a name="line242"></a> */\par
+<a name="line243"></a>goog.net.XhrIo.METHODS_WITH_FORM_DATA = [&#39;POST&#39;, &#39;PUT&#39;];\par
+<a name="line244"></a>\par
+<a name="line245"></a>\par
+<a name="line246"></a>/**\par
+<a name="line247"></a> * The Content-Type HTTP header value for a url-encoded form\par
+<a name="line248"></a> * @type \{string\}\par
+<a name="line249"></a> */\par
+<a name="line250"></a>goog.net.XhrIo.FORM_CONTENT_TYPE =\par
+<a name="line251"></a>    &#39;application/x-www-form-urlencoded;charset=utf-8&#39;;\par
+<a name="line252"></a>\par
+<a name="line253"></a>\par
+<a name="line254"></a>/**\par
+<a name="line255"></a> * The XMLHttpRequest Level two timeout delay ms property name.\par
+<a name="line256"></a> *\par
+<a name="line257"></a> * @see {\field{\*\fldinst{HYPERLINK "http://www.w3.org/TR/XMLHttpRequest/#the-timeout-attribute"}}{\fldrslt{\ul\cf1 http://www.w3.org/TR/XMLHttpRequest/#the-timeout-attribute}}}\f0\fs22\par
+<a name="line258"></a> *\par
+<a name="line259"></a> * @private \{string\}\par
+<a name="line260"></a> * @const\par
+<a name="line261"></a> */\par
+<a name="line262"></a>goog.net.XhrIo.XHR2_TIMEOUT_ = &#39;timeout&#39;;\par
+<a name="line263"></a>\par
+<a name="line264"></a>\par
+<a name="line265"></a>/**\par
+<a name="line266"></a> * The XMLHttpRequest Level two ontimeout handler property name.\par
+<a name="line267"></a> *\par
+<a name="line268"></a> * @see {\field{\*\fldinst{HYPERLINK "http://www.w3.org/TR/XMLHttpRequest/#the-timeout-attribute"}}{\fldrslt{\ul\cf1 http://www.w3.org/TR/XMLHttpRequest/#the-timeout-attribute}}}\f0\fs22\par
+<a name="line269"></a> *\par
+<a name="line270"></a> * @private \{string\}\par
+<a name="line271"></a> * @const\par
+<a name="line272"></a> */\par
+<a name="line273"></a>goog.net.XhrIo.XHR2_ON_TIMEOUT_ = &#39;ontimeout&#39;;\par
+<a name="line274"></a>\par
+<a name="line275"></a>\par
+<a name="line276"></a>/**\par
+<a name="line277"></a> * All non-disposed instances of goog.net.XhrIo created\par
+<a name="line278"></a> * by \{@link goog.net.XhrIo.send\} are in this Array.\par
+<a name="line279"></a> * @see goog.net.XhrIo.cleanup\par
+<a name="line280"></a> * @private \{!Array.&lt;!goog.net.XhrIo&gt;\}\par
+<a name="line281"></a> */\par
+<a name="line282"></a>goog.net.XhrIo.sendInstances_ = [];\par
+<a name="line283"></a>\par
+<a name="line284"></a>\par
+<a name="line285"></a>/**\par
+<a name="line286"></a> * Static send that creates a short lived instance of XhrIo to send the\par
+<a name="line287"></a> * request.\par
+<a name="line288"></a> * @see goog.net.XhrIo.cleanup\par
+<a name="line289"></a> * @param \{string|goog.Uri\} url Uri to make request to.\par
+<a name="line290"></a> * @param \{Function=\} opt_callback Callback function for when request is\par
+<a name="line291"></a> *     complete.\par
+<a name="line292"></a> * @param \{string=\} opt_method Send method, default: GET.\par
+<a name="line293"></a> * @param \{ArrayBuffer|ArrayBufferView|Blob|Document|FormData|string=\}\par
+<a name="line294"></a> *     opt_content Body data.\par
+<a name="line295"></a> * @param \{Object|goog.structs.Map=\} opt_headers Map of headers to add to the\par
+<a name="line296"></a> *     request.\par
+<a name="line297"></a> * @param \{number=\} opt_timeoutInterval Number of milliseconds after which an\par
+<a name="line298"></a> *     incomplete request will be aborted; 0 means no timeout is set.\par
+<a name="line299"></a> * @param \{boolean=\} opt_withCredentials Whether to send credentials with the\par
+<a name="line300"></a> *     request. Default to false. See \{@link goog.net.XhrIo#setWithCredentials\}.\par
+<a name="line301"></a> */\par
+<a name="line302"></a>goog.net.XhrIo.send = function(url, opt_callback, opt_method, opt_content,\par
+<a name="line303"></a>                               opt_headers, opt_timeoutInterval,\par
+<a name="line304"></a>                               opt_withCredentials) \{\par
+<a name="line305"></a>  var x = new goog.net.XhrIo();\par
+<a name="line306"></a>  goog.net.XhrIo.sendInstances_.push(x);\par
+<a name="line307"></a>  if (opt_callback) \{\par
+<a name="line308"></a>    x.listen(goog.net.EventType.COMPLETE, opt_callback);\par
+<a name="line309"></a>  \}\par
+<a name="line310"></a>  x.listenOnce(goog.net.EventType.READY, x.cleanupSend_);\par
+<a name="line311"></a>  if (opt_timeoutInterval) \{\par
+<a name="line312"></a>    x.setTimeoutInterval(opt_timeoutInterval);\par
+<a name="line313"></a>  \}\par
+<a name="line314"></a>  if (opt_withCredentials) \{\par
+<a name="line315"></a>    x.setWithCredentials(opt_withCredentials);\par
+<a name="line316"></a>  \}\par
+<a name="line317"></a>  x.send(url, opt_method, opt_content, opt_headers);\par
+<a name="line318"></a>\};\par
+<a name="line319"></a>\par
+<a name="line320"></a>\par
+<a name="line321"></a>/**\par
+<a name="line322"></a> * Disposes all non-disposed instances of goog.net.XhrIo created by\par
+<a name="line323"></a> * \{@link goog.net.XhrIo.send\}.\par
+<a name="line324"></a> * \{@link goog.net.XhrIo.send\} cleans up the goog.net.XhrIo instance\par
+<a name="line325"></a> * it creates when the request completes or fails.  However, if\par
+<a name="line326"></a> * the request never completes, then the goog.net.XhrIo is not disposed.\par
+<a name="line327"></a> * This can occur if the window is unloaded before the request completes.\par
+<a name="line328"></a> * We could have \{@link goog.net.XhrIo.send\} return the goog.net.XhrIo\par
+<a name="line329"></a> * it creates and make the client of \{@link goog.net.XhrIo.send\} be\par
+<a name="line330"></a> * responsible for disposing it in this case.  However, this makes things\par
+<a name="line331"></a> * significantly more complicated for the client, and the whole point\par
+<a name="line332"></a> * of \{@link goog.net.XhrIo.send\} is that it&#39;s simple and easy to use.\par
+<a name="line333"></a> * Clients of \{@link goog.net.XhrIo.send\} should call\par
+<a name="line334"></a> * \{@link goog.net.XhrIo.cleanup\} when doing final\par
+<a name="line335"></a> * cleanup on window unload.\par
+<a name="line336"></a> */\par
+<a name="line337"></a>goog.net.XhrIo.cleanup = function() \{\par
+<a name="line338"></a>  var instances = goog.net.XhrIo.sendInstances_;\par
+<a name="line339"></a>  while (instances.length) \{\par
+<a name="line340"></a>    instances.pop().dispose();\par
+<a name="line341"></a>  \}\par
+<a name="line342"></a>\};\par
+<a name="line343"></a>\par
+<a name="line344"></a>\par
+<a name="line345"></a>/**\par
+<a name="line346"></a> * Installs exception protection for all entry point introduced by\par
+<a name="line347"></a> * goog.net.XhrIo instances which are not protected by\par
+<a name="line348"></a> * \{@link goog.debug.ErrorHandler#protectWindowSetTimeout\},\par
+<a name="line349"></a> * \{@link goog.debug.ErrorHandler#protectWindowSetInterval\}, or\par
+<a name="line350"></a> * \{@link goog.events.protectBrowserEventEntryPoint\}.\par
+<a name="line351"></a> *\par
+<a name="line352"></a> * @param \{goog.debug.ErrorHandler\} errorHandler Error handler with which to\par
+<a name="line353"></a> *     protect the entry point(s).\par
+<a name="line354"></a> */\par
+<a name="line355"></a>goog.net.XhrIo.protectEntryPoints = function(errorHandler) \{\par
+<a name="line356"></a>  goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_ =\par
+<a name="line357"></a>      errorHandler.protectEntryPoint(\par
+<a name="line358"></a>          goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_);\par
+<a name="line359"></a>\};\par
+<a name="line360"></a>\par
+<a name="line361"></a>\par
+<a name="line362"></a>/**\par
+<a name="line363"></a> * Disposes of the specified goog.net.XhrIo created by\par
+<a name="line364"></a> * \{@link goog.net.XhrIo.send\} and removes it from\par
+<a name="line365"></a> * \{@link goog.net.XhrIo.pendingStaticSendInstances_\}.\par
+<a name="line366"></a> * @private\par
+<a name="line367"></a> */\par
+<a name="line368"></a>goog.net.XhrIo.prototype.cleanupSend_ = function() \{\par
+<a name="line369"></a>  this.dispose();\par
+<a name="line370"></a>  goog.array.remove(goog.net.XhrIo.sendInstances_, this);\par
+<a name="line371"></a>\};\par
+<a name="line372"></a>\par
+<a name="line373"></a>\par
+<a name="line374"></a>/**\par
+<a name="line375"></a> * Returns the number of milliseconds after which an incomplete request will be\par
+<a name="line376"></a> * aborted, or 0 if no timeout is set.\par
+<a name="line377"></a> * @return \{number\} Timeout interval in milliseconds.\par
+<a name="line378"></a> */\par
+<a name="line379"></a>goog.net.XhrIo.prototype.getTimeoutInterval = function() \{\par
+<a name="line380"></a>  return this.timeoutInterval_;\par
+<a name="line381"></a>\};\par
+<a name="line382"></a>\par
+<a name="line383"></a>\par
+<a name="line384"></a>/**\par
+<a name="line385"></a> * Sets the number of milliseconds after which an incomplete request will be\par
+<a name="line386"></a> * aborted and a \{@link goog.net.EventType.TIMEOUT\} event raised; 0 means no\par
+<a name="line387"></a> * timeout is set.\par
+<a name="line388"></a> * @param \{number\} ms Timeout interval in milliseconds; 0 means none.\par
+<a name="line389"></a> */\par
+<a name="line390"></a>goog.net.XhrIo.prototype.setTimeoutInterval = function(ms) \{\par
+<a name="line391"></a>  this.timeoutInterval_ = Math.max(0, ms);\par
+<a name="line392"></a>\};\par
+<a name="line393"></a>\par
+<a name="line394"></a>\par
+<a name="line395"></a>/**\par
+<a name="line396"></a> * Sets the desired type for the response. At time of writing, this is only\par
+<a name="line397"></a> * supported in very recent versions of WebKit (10.0.612.1 dev and later).\par
+<a name="line398"></a> *\par
+<a name="line399"></a> * If this is used, the response may only be accessed via \{@link #getResponse\}.\par
+<a name="line400"></a> *\par
+<a name="line401"></a> * @param \{goog.net.XhrIo.ResponseType\} type The desired type for the response.\par
+<a name="line402"></a> */\par
+<a name="line403"></a>goog.net.XhrIo.prototype.setResponseType = function(type) \{\par
+<a name="line404"></a>  this.responseType_ = type;\par
+<a name="line405"></a>\};\par
+<a name="line406"></a>\par
+<a name="line407"></a>\par
+<a name="line408"></a>/**\par
+<a name="line409"></a> * Gets the desired type for the response.\par
+<a name="line410"></a> * @return \{goog.net.XhrIo.ResponseType\} The desired type for the response.\par
+<a name="line411"></a> */\par
+<a name="line412"></a>goog.net.XhrIo.prototype.getResponseType = function() \{\par
+<a name="line413"></a>  return this.responseType_;\par
+<a name="line414"></a>\};\par
+<a name="line415"></a>\par
+<a name="line416"></a>\par
+<a name="line417"></a>/**\par
+<a name="line418"></a> * Sets whether a &quot;credentialed&quot; request that is aware of cookie and\par
+<a name="line419"></a> * authentication information should be made. This option is only supported by\par
+<a name="line420"></a> * browsers that support HTTP Access Control. As of this writing, this option\par
+<a name="line421"></a> * is not supported in IE.\par
+<a name="line422"></a> *\par
+<a name="line423"></a> * @param \{boolean\} withCredentials Whether this should be a &quot;credentialed&quot;\par
+<a name="line424"></a> *     request.\par
+<a name="line425"></a> */\par
+<a name="line426"></a>goog.net.XhrIo.prototype.setWithCredentials = function(withCredentials) \{\par
+<a name="line427"></a>  this.withCredentials_ = withCredentials;\par
+<a name="line428"></a>\};\par
+<a name="line429"></a>\par
+<a name="line430"></a>\par
+<a name="line431"></a>/**\par
+<a name="line432"></a> * Gets whether a &quot;credentialed&quot; request is to be sent.\par
+<a name="line433"></a> * @return \{boolean\} The desired type for the response.\par
+<a name="line434"></a> */\par
+<a name="line435"></a>goog.net.XhrIo.prototype.getWithCredentials = function() \{\par
+<a name="line436"></a>  return this.withCredentials_;\par
+<a name="line437"></a>\};\par
+<a name="line438"></a>\par
+<a name="line439"></a>\par
+<a name="line440"></a>/**\par
+<a name="line441"></a> * Instance send that actually uses XMLHttpRequest to make a server call.\par
+<a name="line442"></a> * @param \{string|goog.Uri\} url Uri to make request to.\par
+<a name="line443"></a> * @param \{string=\} opt_method Send method, default: GET.\par
+<a name="line444"></a> * @param \{ArrayBuffer|ArrayBufferView|Blob|Document|FormData|string=\}\par
+<a name="line445"></a> *     opt_content Body data.\par
+<a name="line446"></a> * @param \{Object|goog.structs.Map=\} opt_headers Map of headers to add to the\par
+<a name="line447"></a> *     request.\par
+<a name="line448"></a> */\par
+<a name="line449"></a>goog.net.XhrIo.prototype.send = function(url, opt_method, opt_content,\par
+<a name="line450"></a>                                         opt_headers) \{\par
+<a name="line451"></a>  if (this.xhr_) \{\par
+<a name="line452"></a>    throw Error(&#39;[goog.net.XhrIo] Object is active with another request=&#39; +\par
+<a name="line453"></a>        this.lastUri_ + &#39;; newUri=&#39; + url);\par
+<a name="line454"></a>  \}\par
+<a name="line455"></a>\par
+<a name="line456"></a>  var method = opt_method ? opt_method.toUpperCase() : &#39;GET&#39;;\par
+<a name="line457"></a>\par
+<a name="line458"></a>  this.lastUri_ = url;\par
+<a name="line459"></a>  this.lastError_ = &#39;&#39;;\par
+<a name="line460"></a>  this.lastErrorCode_ = goog.net.ErrorCode.NO_ERROR;\par
+<a name="line461"></a>  this.lastMethod_ = method;\par
+<a name="line462"></a>  this.errorDispatched_ = false;\par
+<a name="line463"></a>  this.active_ = true;\par
+<a name="line464"></a>\par
+<a name="line465"></a>  // Use the factory to create the XHR object and options\par
+<a name="line466"></a>  this.xhr_ = this.createXhr();\par
+<a name="line467"></a>  this.xhrOptions_ = this.xmlHttpFactory_ ?\par
+<a name="line468"></a>      this.xmlHttpFactory_.getOptions() : goog.net.XmlHttp.getOptions();\par
+<a name="line469"></a>\par
+<a name="line470"></a>  // Set up the onreadystatechange callback\par
+<a name="line471"></a>  this.xhr_.onreadystatechange = goog.bind(this.onReadyStateChange_, this);\par
+<a name="line472"></a>\par
+<a name="line473"></a>  /**\par
+<a name="line474"></a>   * Try to open the XMLHttpRequest (always async), if an error occurs here it\par
+<a name="line475"></a>   * is generally permission denied\par
+<a name="line476"></a>   * @preserveTry\par
+<a name="line477"></a>   */\par
+<a name="line478"></a>  try \{\par
+<a name="line479"></a>    goog.log.fine(this.logger_, this.formatMsg_(&#39;Opening Xhr&#39;));\par
+<a name="line480"></a>    this.inOpen_ = true;\par
+<a name="line481"></a>    this.xhr_.open(method, String(url), true);  // Always async!\par
+<a name="line482"></a>    this.inOpen_ = false;\par
+<a name="line483"></a>  \} catch (err) \{\par
+<a name="line484"></a>    goog.log.fine(this.logger_,\par
+<a name="line485"></a>        this.formatMsg_(&#39;Error opening Xhr: &#39; + err.message));\par
+<a name="line486"></a>    this.error_(goog.net.ErrorCode.EXCEPTION, err);\par
+<a name="line487"></a>    return;\par
+<a name="line488"></a>  \}\par
+<a name="line489"></a>\par
+<a name="line490"></a>  // We can&#39;t use null since this won&#39;t allow requests with form data to have a\par
+<a name="line491"></a>  // content length specified which will cause some proxies to return a 411\par
+<a name="line492"></a>  // error.\par
+<a name="line493"></a>  var content = opt_content || &#39;&#39;;\par
+<a name="line494"></a>\par
+<a name="line495"></a>  var headers = this.headers.clone();\par
+<a name="line496"></a>\par
+<a name="line497"></a>  // Add headers specific to this request\par
+<a name="line498"></a>  if (opt_headers) \{\par
+<a name="line499"></a>    goog.structs.forEach(opt_headers, function(value, key) \{\par
+<a name="line500"></a>      headers.set(key, value);\par
+<a name="line501"></a>    \});\par
+<a name="line502"></a>  \}\par
+<a name="line503"></a>\par
+<a name="line504"></a>  // Find whether a content type header is set, ignoring case.\par
+<a name="line505"></a>  // HTTP header names are case-insensitive.  See:\par
+<a name="line506"></a>  // {\field{\*\fldinst{HYPERLINK "http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2"}}{\fldrslt{\ul\cf1 http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2}}}\f0\fs22\par
+<a name="line507"></a>  var contentTypeKey = goog.array.find(headers.getKeys(),\par
+<a name="line508"></a>      goog.net.XhrIo.isContentTypeHeader_);\par
+<a name="line509"></a>\par
+<a name="line510"></a>  var contentIsFormData = (goog.global[&#39;FormData&#39;] &amp;&amp;\par
+<a name="line511"></a>      (content instanceof goog.global[&#39;FormData&#39;]));\par
+<a name="line512"></a>  if (goog.array.contains(goog.net.XhrIo.METHODS_WITH_FORM_DATA, method) &amp;&amp;\par
+<a name="line513"></a>      !contentTypeKey &amp;&amp; !contentIsFormData) \{\par
+<a name="line514"></a>    // For requests typically with form data, default to the url-encoded form\par
+<a name="line515"></a>    // content type unless this is a FormData request.  For FormData,\par
+<a name="line516"></a>    // the browser will automatically add a multipart/form-data content type\par
+<a name="line517"></a>    // with an appropriate multipart boundary.\par
+<a name="line518"></a>    headers.set(goog.net.XhrIo.CONTENT_TYPE_HEADER,\par
+<a name="line519"></a>                goog.net.XhrIo.FORM_CONTENT_TYPE);\par
+<a name="line520"></a>  \}\par
+<a name="line521"></a>\par
+<a name="line522"></a>  // Add the headers to the Xhr object\par
+<a name="line523"></a>  headers.forEach(function(value, key) \{\par
+<a name="line524"></a>    this.xhr_.setRequestHeader(key, value);\par
+<a name="line525"></a>  \}, this);\par
+<a name="line526"></a>\par
+<a name="line527"></a>  if (this.responseType_) \{\par
+<a name="line528"></a>    this.xhr_.responseType = this.responseType_;\par
+<a name="line529"></a>  \}\par
+<a name="line530"></a>\par
+<a name="line531"></a>  if (goog.object.containsKey(this.xhr_, &#39;withCredentials&#39;)) \{\par
+<a name="line532"></a>    this.xhr_.withCredentials = this.withCredentials_;\par
+<a name="line533"></a>  \}\par
+<a name="line534"></a>\par
+<a name="line535"></a>  /**\par
+<a name="line536"></a>   * Try to send the request, or other wise report an error (404 not found).\par
+<a name="line537"></a>   * @preserveTry\par
+<a name="line538"></a>   */\par
+<a name="line539"></a>  try \{\par
+<a name="line540"></a>    this.cleanUpTimeoutTimer_(); // Paranoid, should never be running.\par
+<a name="line541"></a>    if (this.timeoutInterval_ &gt; 0) \{\par
+<a name="line542"></a>      this.useXhr2Timeout_ = goog.net.XhrIo.shouldUseXhr2Timeout_(this.xhr_);\par
+<a name="line543"></a>      goog.log.fine(this.logger_, this.formatMsg_(&#39;Will abort after &#39; +\par
+<a name="line544"></a>          this.timeoutInterval_ + &#39;ms if incomplete, xhr2 &#39; +\par
+<a name="line545"></a>          this.useXhr2Timeout_));\par
+<a name="line546"></a>      if (this.useXhr2Timeout_) \{\par
+<a name="line547"></a>        this.xhr_[goog.net.XhrIo.XHR2_TIMEOUT_] = this.timeoutInterval_;\par
+<a name="line548"></a>        this.xhr_[goog.net.XhrIo.XHR2_ON_TIMEOUT_] =\par
+<a name="line549"></a>            goog.bind(this.timeout_, this);\par
+<a name="line550"></a>      \} else \{\par
+<a name="line551"></a>        this.timeoutId_ = goog.Timer.callOnce(this.timeout_,\par
+<a name="line552"></a>            this.timeoutInterval_, this);\par
+<a name="line553"></a>      \}\par
+<a name="line554"></a>    \}\par
+<a name="line555"></a>    goog.log.fine(this.logger_, this.formatMsg_(&#39;Sending request&#39;));\par
+<a name="line556"></a>    this.inSend_ = true;\par
+<a name="line557"></a>    this.xhr_.send(content);\par
+<a name="line558"></a>    this.inSend_ = false;\par
+<a name="line559"></a>\par
+<a name="line560"></a>  \} catch (err) \{\par
+<a name="line561"></a>    goog.log.fine(this.logger_, this.formatMsg_(&#39;Send error: &#39; + err.message));\par
+<a name="line562"></a>    this.error_(goog.net.ErrorCode.EXCEPTION, err);\par
+<a name="line563"></a>  \}\par
+<a name="line564"></a>\};\par
+<a name="line565"></a>\par
+<a name="line566"></a>\par
+<a name="line567"></a>/**\par
+<a name="line568"></a> * Determines if the argument is an XMLHttpRequest that supports the level 2\par
+<a name="line569"></a> * timeout value and event.\par
+<a name="line570"></a> *\par
+<a name="line571"></a> * Currently, FF 21.0 OS X has the fields but won&#39;t actually call the timeout\par
+<a name="line572"></a> * handler.  Perhaps the confusion in the bug referenced below hasn&#39;t\par
+<a name="line573"></a> * entirely been resolved.\par
+<a name="line574"></a> *\par
+<a name="line575"></a> * @see {\field{\*\fldinst{HYPERLINK "http://www.w3.org/TR/XMLHttpRequest/#the-timeout-attribute"}}{\fldrslt{\ul\cf1 http://www.w3.org/TR/XMLHttpRequest/#the-timeout-attribute}}}\f0\fs22\par
+<a name="line576"></a> * @see {\field{\*\fldinst{HYPERLINK "https://bugzilla.mozilla.org/show_bug.cgi?id=525816"}}{\fldrslt{\ul\cf1 https://bugzilla.mozilla.org/show_bug.cgi?id=525816}}}\f0\fs22\par
+<a name="line577"></a> *\par
+<a name="line578"></a> * @param \{!goog.net.XhrLike.OrNative\} xhr The request.\par
+<a name="line579"></a> * @return \{boolean\} True if the request supports level 2 timeout.\par
+<a name="line580"></a> * @private\par
+<a name="line581"></a> */\par
+<a name="line582"></a>goog.net.XhrIo.shouldUseXhr2Timeout_ = function(xhr) \{\par
+<a name="line583"></a>  return goog.userAgent.IE &amp;&amp;\par
+<a name="line584"></a>      goog.userAgent.isVersionOrHigher(9) &amp;&amp;\par
+<a name="line585"></a>      goog.isNumber(xhr[goog.net.XhrIo.XHR2_TIMEOUT_]) &amp;&amp;\par
+<a name="line586"></a>      goog.isDef(xhr[goog.net.XhrIo.XHR2_ON_TIMEOUT_]);\par
+<a name="line587"></a>\};\par
+<a name="line588"></a>\par
+<a name="line589"></a>\par
+<a name="line590"></a>/**\par
+<a name="line591"></a> * @param \{string\} header An HTTP header key.\par
+<a name="line592"></a> * @return \{boolean\} Whether the key is a content type header (ignoring\par
+<a name="line593"></a> *     case.\par
+<a name="line594"></a> * @private\par
+<a name="line595"></a> */\par
+<a name="line596"></a>goog.net.XhrIo.isContentTypeHeader_ = function(header) \{\par
+<a name="line597"></a>  return goog.string.caseInsensitiveEquals(\par
+<a name="line598"></a>      goog.net.XhrIo.CONTENT_TYPE_HEADER, header);\par
+<a name="line599"></a>\};\par
+<a name="line600"></a>\par
+<a name="line601"></a>\par
+<a name="line602"></a>/**\par
+<a name="line603"></a> * Creates a new XHR object.\par
+<a name="line604"></a> * @return \{!goog.net.XhrLike.OrNative\} The newly created XHR object.\par
+<a name="line605"></a> * @protected\par
+<a name="line606"></a> */\par
+<a name="line607"></a>goog.net.XhrIo.prototype.createXhr = function() \{\par
+<a name="line608"></a>  return this.xmlHttpFactory_ ?\par
+<a name="line609"></a>      this.xmlHttpFactory_.createInstance() : goog.net.XmlHttp();\par
+<a name="line610"></a>\};\par
+<a name="line611"></a>\par
+<a name="line612"></a>\par
+<a name="line613"></a>/**\par
+<a name="line614"></a> * The request didn&#39;t complete after \{@link goog.net.XhrIo#timeoutInterval_\}\par
+<a name="line615"></a> * milliseconds; raises a \{@link goog.net.EventType.TIMEOUT\} event and aborts\par
+<a name="line616"></a> * the request.\par
+<a name="line617"></a> * @private\par
+<a name="line618"></a> */\par
+<a name="line619"></a>goog.net.XhrIo.prototype.timeout_ = function() \{\par
+<a name="line620"></a>  if (typeof goog == &#39;undefined&#39;) \{\par
+<a name="line621"></a>    // If goog is undefined then the callback has occurred as the application\par
+<a name="line622"></a>    // is unloading and will error.  Thus we let it silently fail.\par
+<a name="line623"></a>  \} else if (this.xhr_) \{\par
+<a name="line624"></a>    this.lastError_ = &#39;Timed out after &#39; + this.timeoutInterval_ +\par
+<a name="line625"></a>                      &#39;ms, aborting&#39;;\par
+<a name="line626"></a>    this.lastErrorCode_ = goog.net.ErrorCode.TIMEOUT;\par
+<a name="line627"></a>    goog.log.fine(this.logger_, this.formatMsg_(this.lastError_));\par
+<a name="line628"></a>    this.dispatchEvent(goog.net.EventType.TIMEOUT);\par
+<a name="line629"></a>    this.abort(goog.net.ErrorCode.TIMEOUT);\par
+<a name="line630"></a>  \}\par
+<a name="line631"></a>\};\par
+<a name="line632"></a>\par
+<a name="line633"></a>\par
+<a name="line634"></a>/**\par
+<a name="line635"></a> * Something errorred, so inactivate, fire error callback and clean up\par
+<a name="line636"></a> * @param \{goog.net.ErrorCode\} errorCode The error code.\par
+<a name="line637"></a> * @param \{Error\} err The error object.\par
+<a name="line638"></a> * @private\par
+<a name="line639"></a> */\par
+<a name="line640"></a>goog.net.XhrIo.prototype.error_ = function(errorCode, err) \{\par
+<a name="line641"></a>  this.active_ = false;\par
+<a name="line642"></a>  if (this.xhr_) \{\par
+<a name="line643"></a>    this.inAbort_ = true;\par
+<a name="line644"></a>    this.xhr_.abort();  // Ensures XHR isn&#39;t hung (FF)\par
+<a name="line645"></a>    this.inAbort_ = false;\par
+<a name="line646"></a>  \}\par
+<a name="line647"></a>  this.lastError_ = err;\par
+<a name="line648"></a>  this.lastErrorCode_ = errorCode;\par
+<a name="line649"></a>  this.dispatchErrors_();\par
+<a name="line650"></a>  this.cleanUpXhr_();\par
+<a name="line651"></a>\};\par
+<a name="line652"></a>\par
+<a name="line653"></a>\par
+<a name="line654"></a>/**\par
+<a name="line655"></a> * Dispatches COMPLETE and ERROR in case of an error. This ensures that we do\par
+<a name="line656"></a> * not dispatch multiple error events.\par
+<a name="line657"></a> * @private\par
+<a name="line658"></a> */\par
+<a name="line659"></a>goog.net.XhrIo.prototype.dispatchErrors_ = function() \{\par
+<a name="line660"></a>  if (!this.errorDispatched_) \{\par
+<a name="line661"></a>    this.errorDispatched_ = true;\par
+<a name="line662"></a>    this.dispatchEvent(goog.net.EventType.COMPLETE);\par
+<a name="line663"></a>    this.dispatchEvent(goog.net.EventType.ERROR);\par
+<a name="line664"></a>  \}\par
+<a name="line665"></a>\};\par
+<a name="line666"></a>\par
+<a name="line667"></a>\par
+<a name="line668"></a>/**\par
+<a name="line669"></a> * Abort the current XMLHttpRequest\par
+<a name="line670"></a> * @param \{goog.net.ErrorCode=\} opt_failureCode Optional error code to use -\par
+<a name="line671"></a> *     defaults to ABORT.\par
+<a name="line672"></a> */\par
+<a name="line673"></a>goog.net.XhrIo.prototype.abort = function(opt_failureCode) \{\par
+<a name="line674"></a>  if (this.xhr_ &amp;&amp; this.active_) \{\par
+<a name="line675"></a>    goog.log.fine(this.logger_, this.formatMsg_(&#39;Aborting&#39;));\par
+<a name="line676"></a>    this.active_ = false;\par
+<a name="line677"></a>    this.inAbort_ = true;\par
+<a name="line678"></a>    this.xhr_.abort();\par
+<a name="line679"></a>    this.inAbort_ = false;\par
+<a name="line680"></a>    this.lastErrorCode_ = opt_failureCode || goog.net.ErrorCode.ABORT;\par
+<a name="line681"></a>    this.dispatchEvent(goog.net.EventType.COMPLETE);\par
+<a name="line682"></a>    this.dispatchEvent(goog.net.EventType.ABORT);\par
+<a name="line683"></a>    this.cleanUpXhr_();\par
+<a name="line684"></a>  \}\par
+<a name="line685"></a>\};\par
+<a name="line686"></a>\par
+<a name="line687"></a>\par
+<a name="line688"></a>/**\par
+<a name="line689"></a> * Nullifies all callbacks to reduce risks of leaks.\par
+<a name="line690"></a> * @override\par
+<a name="line691"></a> * @protected\par
+<a name="line692"></a> */\par
+<a name="line693"></a>goog.net.XhrIo.prototype.disposeInternal = function() \{\par
+<a name="line694"></a>  if (this.xhr_) \{\par
+<a name="line695"></a>    // We explicitly do not call xhr_.abort() unless active_ is still true.\par
+<a name="line696"></a>    // This is to avoid unnecessarily aborting a successful request when\par
+<a name="line697"></a>    // dispose() is called in a callback triggered by a complete response, but\par
+<a name="line698"></a>    // in which browser cleanup has not yet finished.\par
+<a name="line699"></a>    // (See {\field{\*\fldinst{HYPERLINK "http://b/issue?id=1684217"}}{\fldrslt{\ul\cf1 http://b/issue?id=1684217}}}\f0\fs22 .)\par
+<a name="line700"></a>    if (this.active_) \{\par
+<a name="line701"></a>      this.active_ = false;\par
+<a name="line702"></a>      this.inAbort_ = true;\par
+<a name="line703"></a>      this.xhr_.abort();\par
+<a name="line704"></a>      this.inAbort_ = false;\par
+<a name="line705"></a>    \}\par
+<a name="line706"></a>    this.cleanUpXhr_(true);\par
+<a name="line707"></a>  \}\par
+<a name="line708"></a>\par
+<a name="line709"></a>  goog.net.XhrIo.base(this, &#39;disposeInternal&#39;);\par
+<a name="line710"></a>\};\par
+<a name="line711"></a>\par
+<a name="line712"></a>\par
+<a name="line713"></a>/**\par
+<a name="line714"></a> * Internal handler for the XHR object&#39;s readystatechange event.  This method\par
+<a name="line715"></a> * checks the status and the readystate and fires the correct callbacks.\par
+<a name="line716"></a> * If the request has ended, the handlers are cleaned up and the XHR object is\par
+<a name="line717"></a> * nullified.\par
+<a name="line718"></a> * @private\par
+<a name="line719"></a> */\par
+<a name="line720"></a>goog.net.XhrIo.prototype.onReadyStateChange_ = function() \{\par
+<a name="line721"></a>  if (this.isDisposed()) \{\par
+<a name="line722"></a>    // This method is the target of an untracked goog.Timer.callOnce().\par
+<a name="line723"></a>    return;\par
+<a name="line724"></a>  \}\par
+<a name="line725"></a>  if (!this.inOpen_ &amp;&amp; !this.inSend_ &amp;&amp; !this.inAbort_) \{\par
+<a name="line726"></a>    // Were not being called from within a call to this.xhr_.send\par
+<a name="line727"></a>    // this.xhr_.abort, or this.xhr_.open, so this is an entry point\par
+<a name="line728"></a>    this.onReadyStateChangeEntryPoint_();\par
+<a name="line729"></a>  \} else \{\par
+<a name="line730"></a>    this.onReadyStateChangeHelper_();\par
+<a name="line731"></a>  \}\par
+<a name="line732"></a>\};\par
+<a name="line733"></a>\par
+<a name="line734"></a>\par
+<a name="line735"></a>/**\par
+<a name="line736"></a> * Used to protect the onreadystatechange handler entry point.  Necessary\par
+<a name="line737"></a> * as \{#onReadyStateChange_\} maybe called from within send or abort, this\par
+<a name="line738"></a> * method is only called when \{#onReadyStateChange_\} is called as an\par
+<a name="line739"></a> * entry point.\par
+<a name="line740"></a> * \{@see #protectEntryPoints\}\par
+<a name="line741"></a> * @private\par
+<a name="line742"></a> */\par
+<a name="line743"></a>goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_ = function() \{\par
+<a name="line744"></a>  this.onReadyStateChangeHelper_();\par
+<a name="line745"></a>\};\par
+<a name="line746"></a>\par
+<a name="line747"></a>\par
+<a name="line748"></a>/**\par
+<a name="line749"></a> * Helper for \{@link #onReadyStateChange_\}.  This is used so that\par
+<a name="line750"></a> * entry point calls to \{@link #onReadyStateChange_\} can be routed through\par
+<a name="line751"></a> * \{@link #onReadyStateChangeEntryPoint_\}.\par
+<a name="line752"></a> * @private\par
+<a name="line753"></a> */\par
+<a name="line754"></a>goog.net.XhrIo.prototype.onReadyStateChangeHelper_ = function() \{\par
+<a name="line755"></a>  if (!this.active_) \{\par
+<a name="line756"></a>    // can get called inside abort call\par
+<a name="line757"></a>    return;\par
+<a name="line758"></a>  \}\par
+<a name="line759"></a>\par
+<a name="line760"></a>  if (typeof goog == &#39;undefined&#39;) \{\par
+<a name="line761"></a>    // NOTE(user): If goog is undefined then the callback has occurred as the\par
+<a name="line762"></a>    // application is unloading and will error.  Thus we let it silently fail.\par
+<a name="line763"></a>\par
+<a name="line764"></a>  \} else if (\par
+<a name="line765"></a>      this.xhrOptions_[goog.net.XmlHttp.OptionType.LOCAL_REQUEST_ERROR] &amp;&amp;\par
+<a name="line766"></a>      this.getReadyState() == goog.net.XmlHttp.ReadyState.COMPLETE &amp;&amp;\par
+<a name="line767"></a>      this.getStatus() == 2) \{\par
+<a name="line768"></a>    // NOTE(user): In IE if send() errors on a *local* request the readystate\par
+<a name="line769"></a>    // is still changed to COMPLETE.  We need to ignore it and allow the\par
+<a name="line770"></a>    // try/catch around send() to pick up the error.\par
+<a name="line771"></a>    goog.log.fine(this.logger_, this.formatMsg_(\par
+<a name="line772"></a>        &#39;Local request error detected and ignored&#39;));\par
+<a name="line773"></a>\par
+<a name="line774"></a>  \} else \{\par
+<a name="line775"></a>\par
+<a name="line776"></a>    // In IE when the response has been cached we sometimes get the callback\par
+<a name="line777"></a>    // from inside the send call and this usually breaks code that assumes that\par
+<a name="line778"></a>    // XhrIo is asynchronous.  If that is the case we delay the callback\par
+<a name="line779"></a>    // using a timer.\par
+<a name="line780"></a>    if (this.inSend_ &amp;&amp;\par
+<a name="line781"></a>        this.getReadyState() == goog.net.XmlHttp.ReadyState.COMPLETE) \{\par
+<a name="line782"></a>      goog.Timer.callOnce(this.onReadyStateChange_, 0, this);\par
+<a name="line783"></a>      return;\par
+<a name="line784"></a>    \}\par
+<a name="line785"></a>\par
+<a name="line786"></a>    this.dispatchEvent(goog.net.EventType.READY_STATE_CHANGE);\par
+<a name="line787"></a>\par
+<a name="line788"></a>    // readyState indicates the transfer has finished\par
+<a name="line789"></a>    if (this.isComplete()) \{\par
+<a name="line790"></a>      goog.log.fine(this.logger_, this.formatMsg_(&#39;Request complete&#39;));\par
+<a name="line791"></a>\par
+<a name="line792"></a>      this.active_ = false;\par
+<a name="line793"></a>\par
+<a name="line794"></a>      try \{\par
+<a name="line795"></a>        // Call the specific callbacks for success or failure. Only call the\par
+<a name="line796"></a>        // success if the status is 200 (HTTP_OK) or 304 (HTTP_CACHED)\par
+<a name="line797"></a>        if (this.isSuccess()) \{\par
+<a name="line798"></a>          this.dispatchEvent(goog.net.EventType.COMPLETE);\par
+<a name="line799"></a>          this.dispatchEvent(goog.net.EventType.SUCCESS);\par
+<a name="line800"></a>        \} else \{\par
+<a name="line801"></a>          this.lastErrorCode_ = goog.net.ErrorCode.HTTP_ERROR;\par
+<a name="line802"></a>          this.lastError_ =\par
+<a name="line803"></a>              this.getStatusText() + &#39; [&#39; + this.getStatus() + &#39;]&#39;;\par
+<a name="line804"></a>          this.dispatchErrors_();\par
+<a name="line805"></a>        \}\par
+<a name="line806"></a>      \} finally \{\par
+<a name="line807"></a>        this.cleanUpXhr_();\par
+<a name="line808"></a>      \}\par
+<a name="line809"></a>    \}\par
+<a name="line810"></a>  \}\par
+<a name="line811"></a>\};\par
+<a name="line812"></a>\par
+<a name="line813"></a>\par
+<a name="line814"></a>/**\par
+<a name="line815"></a> * Remove the listener to protect against leaks, and nullify the XMLHttpRequest\par
+<a name="line816"></a> * object.\par
+<a name="line817"></a> * @param \{boolean=\} opt_fromDispose If this is from the dispose (don&#39;t want to\par
+<a name="line818"></a> *     fire any events).\par
+<a name="line819"></a> * @private\par
+<a name="line820"></a> */\par
+<a name="line821"></a>goog.net.XhrIo.prototype.cleanUpXhr_ = function(opt_fromDispose) \{\par
+<a name="line822"></a>  if (this.xhr_) \{\par
+<a name="line823"></a>    // Cancel any pending timeout event handler.\par
+<a name="line824"></a>    this.cleanUpTimeoutTimer_();\par
+<a name="line825"></a>\par
+<a name="line826"></a>    // Save reference so we can mark it as closed after the READY event.  The\par
+<a name="line827"></a>    // READY event may trigger another request, thus we must nullify this.xhr_\par
+<a name="line828"></a>    var xhr = this.xhr_;\par
+<a name="line829"></a>    var clearedOnReadyStateChange =\par
+<a name="line830"></a>        this.xhrOptions_[goog.net.XmlHttp.OptionType.USE_NULL_FUNCTION] ?\par
+<a name="line831"></a>            goog.nullFunction : null;\par
+<a name="line832"></a>    this.xhr_ = null;\par
+<a name="line833"></a>    this.xhrOptions_ = null;\par
+<a name="line834"></a>\par
+<a name="line835"></a>    if (!opt_fromDispose) \{\par
+<a name="line836"></a>      this.dispatchEvent(goog.net.EventType.READY);\par
+<a name="line837"></a>    \}\par
+<a name="line838"></a>\par
+<a name="line839"></a>    try \{\par
+<a name="line840"></a>      // NOTE(user): Not nullifying in FireFox can still leak if the callbacks\par
+<a name="line841"></a>      // are defined in the same scope as the instance of XhrIo. But, IE doesn&#39;t\par
+<a name="line842"></a>      // allow you to set the onreadystatechange to NULL so nullFunction is\par
+<a name="line843"></a>      // used.\par
+<a name="line844"></a>      xhr.onreadystatechange = clearedOnReadyStateChange;\par
+<a name="line845"></a>    \} catch (e) \{\par
+<a name="line846"></a>      // This seems to occur with a Gears HTTP request. Delayed the setting of\par
+<a name="line847"></a>      // this onreadystatechange until after READY is sent out and catching the\par
+<a name="line848"></a>      // error to see if we can track down the problem.\par
+<a name="line849"></a>      goog.log.error(this.logger_,\par
+<a name="line850"></a>          &#39;Problem encountered resetting onreadystatechange: &#39; + e.message);\par
+<a name="line851"></a>    \}\par
+<a name="line852"></a>  \}\par
+<a name="line853"></a>\};\par
+<a name="line854"></a>\par
+<a name="line855"></a>\par
+<a name="line856"></a>/**\par
+<a name="line857"></a> * Make sure the timeout timer isn&#39;t running.\par
+<a name="line858"></a> * @private\par
+<a name="line859"></a> */\par
+<a name="line860"></a>goog.net.XhrIo.prototype.cleanUpTimeoutTimer_ = function() \{\par
+<a name="line861"></a>  if (this.xhr_ &amp;&amp; this.useXhr2Timeout_) \{\par
+<a name="line862"></a>    this.xhr_[goog.net.XhrIo.XHR2_ON_TIMEOUT_] = null;\par
+<a name="line863"></a>  \}\par
+<a name="line864"></a>  if (goog.isNumber(this.timeoutId_)) \{\par
+<a name="line865"></a>    goog.Timer.clear(this.timeoutId_);\par
+<a name="line866"></a>    this.timeoutId_ = null;\par
+<a name="line867"></a>  \}\par
+<a name="line868"></a>\};\par
+<a name="line869"></a>\par
+<a name="line870"></a>\par
+<a name="line871"></a>/**\par
+<a name="line872"></a> * @return \{boolean\} Whether there is an active request.\par
+<a name="line873"></a> */\par
+<a name="line874"></a>goog.net.XhrIo.prototype.isActive = function() \{\par
+<a name="line875"></a>  return !!this.xhr_;\par
+<a name="line876"></a>\};\par
+<a name="line877"></a>\par
+<a name="line878"></a>\par
+<a name="line879"></a>/**\par
+<a name="line880"></a> * @return \{boolean\} Whether the request has completed.\par
+<a name="line881"></a> */\par
+<a name="line882"></a>goog.net.XhrIo.prototype.isComplete = function() \{\par
+<a name="line883"></a>  return this.getReadyState() == goog.net.XmlHttp.ReadyState.COMPLETE;\par
+<a name="line884"></a>\};\par
+<a name="line885"></a>\par
+<a name="line886"></a>\par
+<a name="line887"></a>/**\par
+<a name="line888"></a> * @return \{boolean\} Whether the request completed with a success.\par
+<a name="line889"></a> */\par
+<a name="line890"></a>goog.net.XhrIo.prototype.isSuccess = function() \{\par
+<a name="line891"></a>  var status = this.getStatus();\par
+<a name="line892"></a>  // A zero status code is considered successful for local files.\par
+<a name="line893"></a>  return goog.net.HttpStatus.isSuccess(status) ||\par
+<a name="line894"></a>      status === 0 &amp;&amp; !this.isLastUriEffectiveSchemeHttp_();\par
+<a name="line895"></a>\};\par
+<a name="line896"></a>\par
+<a name="line897"></a>\par
+<a name="line898"></a>/**\par
+<a name="line899"></a> * @return \{boolean\} whether the effective scheme of the last URI that was\par
+<a name="line900"></a> *     fetched was &#39;http&#39; or &#39;https&#39;.\par
+<a name="line901"></a> * @private\par
+<a name="line902"></a> */\par
+<a name="line903"></a>goog.net.XhrIo.prototype.isLastUriEffectiveSchemeHttp_ = function() \{\par
+<a name="line904"></a>  var scheme = goog.uri.utils.getEffectiveScheme(String(this.lastUri_));\par
+<a name="line905"></a>  return goog.net.XhrIo.HTTP_SCHEME_PATTERN.test(scheme);\par
+<a name="line906"></a>\};\par
+<a name="line907"></a>\par
+<a name="line908"></a>\par
+<a name="line909"></a>/**\par
+<a name="line910"></a> * Get the readystate from the Xhr object\par
+<a name="line911"></a> * Will only return correct result when called from the context of a callback\par
+<a name="line912"></a> * @return \{goog.net.XmlHttp.ReadyState\} goog.net.XmlHttp.ReadyState.*.\par
+<a name="line913"></a> */\par
+<a name="line914"></a>goog.net.XhrIo.prototype.getReadyState = function() \{\par
+<a name="line915"></a>  return this.xhr_ ?\par
+<a name="line916"></a>      /** @type \{goog.net.XmlHttp.ReadyState\} */ (this.xhr_.readyState) :\par
+<a name="line917"></a>      goog.net.XmlHttp.ReadyState.UNINITIALIZED;\par
+<a name="line918"></a>\};\par
+<a name="line919"></a>\par
+<a name="line920"></a>\par
+<a name="line921"></a>/**\par
+<a name="line922"></a> * Get the status from the Xhr object\par
+<a name="line923"></a> * Will only return correct result when called from the context of a callback\par
+<a name="line924"></a> * @return \{number\} Http status.\par
+<a name="line925"></a> */\par
+<a name="line926"></a>goog.net.XhrIo.prototype.getStatus = function() \{\par
+<a name="line927"></a>  /**\par
+<a name="line928"></a>   * IE doesn&#39;t like you checking status until the readystate is greater than 2\par
+<a name="line929"></a>   * (i.e. it is receiving or complete).  The try/catch is used for when the\par
+<a name="line930"></a>   * page is unloading and an ERROR_NOT_AVAILABLE may occur when accessing xhr_.\par
+<a name="line931"></a>   * @preserveTry\par
+<a name="line932"></a>   */\par
+<a name="line933"></a>  try \{\par
+<a name="line934"></a>    return this.getReadyState() &gt; goog.net.XmlHttp.ReadyState.LOADED ?\par
+<a name="line935"></a>        this.xhr_.status : -1;\par
+<a name="line936"></a>  \} catch (e) \{\par
+<a name="line937"></a>    return -1;\par
+<a name="line938"></a>  \}\par
+<a name="line939"></a>\};\par
+<a name="line940"></a>\par
+<a name="line941"></a>\par
+<a name="line942"></a>/**\par
+<a name="line943"></a> * Get the status text from the Xhr object\par
+<a name="line944"></a> * Will only return correct result when called from the context of a callback\par
+<a name="line945"></a> * @return \{string\} Status text.\par
+<a name="line946"></a> */\par
+<a name="line947"></a>goog.net.XhrIo.prototype.getStatusText = function() \{\par
+<a name="line948"></a>  /**\par
+<a name="line949"></a>   * IE doesn&#39;t like you checking status until the readystate is greater than 2\par
+<a name="line950"></a>   * (i.e. it is recieving or complete).  The try/catch is used for when the\par
+<a name="line951"></a>   * page is unloading and an ERROR_NOT_AVAILABLE may occur when accessing xhr_.\par
+<a name="line952"></a>   * @preserveTry\par
+<a name="line953"></a>   */\par
+<a name="line954"></a>  try \{\par
+<a name="line955"></a>    return this.getReadyState() &gt; goog.net.XmlHttp.ReadyState.LOADED ?\par
+<a name="line956"></a>        this.xhr_.statusText : &#39;&#39;;\par
+<a name="line957"></a>  \} catch (e) \{\par
+<a name="line958"></a>    goog.log.fine(this.logger_, &#39;Can not get status: &#39; + e.message);\par
+<a name="line959"></a>    return &#39;&#39;;\par
+<a name="line960"></a>  \}\par
+<a name="line961"></a>\};\par
+<a name="line962"></a>\par
+<a name="line963"></a>\par
+<a name="line964"></a>/**\par
+<a name="line965"></a> * Get the last Uri that was requested\par
+<a name="line966"></a> * @return \{string\} Last Uri.\par
+<a name="line967"></a> */\par
+<a name="line968"></a>goog.net.XhrIo.prototype.getLastUri = function() \{\par
+<a name="line969"></a>  return String(this.lastUri_);\par
+<a name="line970"></a>\};\par
+<a name="line971"></a>\par
+<a name="line972"></a>\par
+<a name="line973"></a>/**\par
+<a name="line974"></a> * Get the response text from the Xhr object\par
+<a name="line975"></a> * Will only return correct result when called from the context of a callback.\par
+<a name="line976"></a> * @return \{string\} Result from the server, or &#39;&#39; if no result available.\par
+<a name="line977"></a> */\par
+<a name="line978"></a>goog.net.XhrIo.prototype.getResponseText = function() \{\par
+<a name="line979"></a>  /** @preserveTry */\par
+<a name="line980"></a>  try \{\par
+<a name="line981"></a>    return this.xhr_ ? this.xhr_.responseText : &#39;&#39;;\par
+<a name="line982"></a>  \} catch (e) \{\par
+<a name="line983"></a>    // {\field{\*\fldinst{HYPERLINK "http://www.w3.org/TR/XMLHttpRequest/#the-responsetext-attribute"}}{\fldrslt{\ul\cf1 http://www.w3.org/TR/XMLHttpRequest/#the-responsetext-attribute}}}\f0\fs22\par
+<a name="line984"></a>    // states that responseText should return &#39;&#39; (and responseXML null)\par
+<a name="line985"></a>    // when the state is not LOADING or DONE. Instead, IE can\par
+<a name="line986"></a>    // throw unexpected exceptions, for example when a request is aborted\par
+<a name="line987"></a>    // or no data is available yet.\par
+<a name="line988"></a>    goog.log.fine(this.logger_, &#39;Can not get responseText: &#39; + e.message);\par
+<a name="line989"></a>    return &#39;&#39;;\par
+<a name="line990"></a>  \}\par
+<a name="line991"></a>\};\par
+<a name="line992"></a>\par
+<a name="line993"></a>\par
+<a name="line994"></a>/**\par
+<a name="line995"></a> * Get the response body from the Xhr object. This property is only available\par
+<a name="line996"></a> * in IE since version 7 according to MSDN:\par
+<a name="line997"></a> * {\field{\*\fldinst{HYPERLINK "http://msdn.microsoft.com/en-us/library/ie/ms534368(v=vs.85).aspx"}}{\fldrslt{\ul\cf1 http://msdn.microsoft.com/en-us/library/ie/ms534368(v=vs.85).aspx}}}\f0\fs22\par
+<a name="line998"></a> * Will only return correct result when called from the context of a callback.\par
+<a name="line999"></a> *\par
+<a name="line1000"></a> * One option is to construct a VBArray from the returned object and convert\par
+<a name="line1001"></a> * it to a JavaScript array using the toArray method:\par
+<a name="line1002"></a> * \{@code (new window[&#39;VBArray&#39;](xhrIo.getResponseBody())).toArray()\}\par
+<a name="line1003"></a> * This will result in an array of numbers in the range of [0..255]\par
+<a name="line1004"></a> *\par
+<a name="line1005"></a> * Another option is to use the VBScript CStr method to convert it into a\par
+<a name="line1006"></a> * string as outlined in {\field{\*\fldinst{HYPERLINK "http://stackoverflow.com/questions/1919972"}}{\fldrslt{\ul\cf1 http://stackoverflow.com/questions/1919972}}}\f0\fs22\par
+<a name="line1007"></a> *\par
+<a name="line1008"></a> * @return \{Object\} Binary result from the server or null if not available.\par
+<a name="line1009"></a> */\par
+<a name="line1010"></a>goog.net.XhrIo.prototype.getResponseBody = function() \{\par
+<a name="line1011"></a>  /** @preserveTry */\par
+<a name="line1012"></a>  try \{\par
+<a name="line1013"></a>    if (this.xhr_ &amp;&amp; &#39;responseBody&#39; in this.xhr_) \{\par
+<a name="line1014"></a>      return this.xhr_[&#39;responseBody&#39;];\par
+<a name="line1015"></a>    \}\par
+<a name="line1016"></a>  \} catch (e) \{\par
+<a name="line1017"></a>    // IE can throw unexpected exceptions, for example when a request is aborted\par
+<a name="line1018"></a>    // or no data is yet available.\par
+<a name="line1019"></a>    goog.log.fine(this.logger_, &#39;Can not get responseBody: &#39; + e.message);\par
+<a name="line1020"></a>  \}\par
+<a name="line1021"></a>  return null;\par
+<a name="line1022"></a>\};\par
+<a name="line1023"></a>\par
+<a name="line1024"></a>\par
+<a name="line1025"></a>/**\par
+<a name="line1026"></a> * Get the response XML from the Xhr object\par
+<a name="line1027"></a> * Will only return correct result when called from the context of a callback.\par
+<a name="line1028"></a> * @return \{Document\} The DOM Document representing the XML file, or null\par
+<a name="line1029"></a> * if no result available.\par
+<a name="line1030"></a> */\par
+<a name="line1031"></a>goog.net.XhrIo.prototype.getResponseXml = function() \{\par
+<a name="line1032"></a>  /** @preserveTry */\par
+<a name="line1033"></a>  try \{\par
+<a name="line1034"></a>    return this.xhr_ ? this.xhr_.responseXML : null;\par
+<a name="line1035"></a>  \} catch (e) \{\par
+<a name="line1036"></a>    goog.log.fine(this.logger_, &#39;Can not get responseXML: &#39; + e.message);\par
+<a name="line1037"></a>    return null;\par
+<a name="line1038"></a>  \}\par
+<a name="line1039"></a>\};\par
+<a name="line1040"></a>\par
+<a name="line1041"></a>\par
+<a name="line1042"></a>/**\par
+<a name="line1043"></a> * Get the response and evaluates it as JSON from the Xhr object\par
+<a name="line1044"></a> * Will only return correct result when called from the context of a callback\par
+<a name="line1045"></a> * @param \{string=\} opt_xssiPrefix Optional XSSI prefix string to use for\par
+<a name="line1046"></a> *     stripping of the response before parsing. This needs to be set only if\par
+<a name="line1047"></a> *     your backend server prepends the same prefix string to the JSON response.\par
+<a name="line1048"></a> * @return \{Object|undefined\} JavaScript object.\par
+<a name="line1049"></a> */\par
+<a name="line1050"></a>goog.net.XhrIo.prototype.getResponseJson = function(opt_xssiPrefix) \{\par
+<a name="line1051"></a>  if (!this.xhr_) \{\par
+<a name="line1052"></a>    return undefined;\par
+<a name="line1053"></a>  \}\par
+<a name="line1054"></a>\par
+<a name="line1055"></a>  var responseText = this.xhr_.responseText;\par
+<a name="line1056"></a>  if (opt_xssiPrefix &amp;&amp; responseText.indexOf(opt_xssiPrefix) == 0) \{\par
+<a name="line1057"></a>    responseText = responseText.substring(opt_xssiPrefix.length);\par
+<a name="line1058"></a>  \}\par
+<a name="line1059"></a>\par
+<a name="line1060"></a>  return goog.json.parse(responseText);\par
+<a name="line1061"></a>\};\par
+<a name="line1062"></a>\par
+<a name="line1063"></a>\par
+<a name="line1064"></a>/**\par
+<a name="line1065"></a> * Get the response as the type specificed by \{@link #setResponseType\}. At time\par
+<a name="line1066"></a> * of writing, this is only directly supported in very recent versions of WebKit\par
+<a name="line1067"></a> * (10.0.612.1 dev and later). If the field is not supported directly, we will\par
+<a name="line1068"></a> * try to emulate it.\par
+<a name="line1069"></a> *\par
+<a name="line1070"></a> * Emulating the response means following the rules laid out at\par
+<a name="line1071"></a> * {\field{\*\fldinst{HYPERLINK "http://www.w3.org/TR/XMLHttpRequest/#the-response-attribute"}}{\fldrslt{\ul\cf1 http://www.w3.org/TR/XMLHttpRequest/#the-response-attribute}}}\f0\fs22\par
+<a name="line1072"></a> *\par
+<a name="line1073"></a> * On browsers with no support for this (Chrome &lt; 10, Firefox &lt; 4, etc), only\par
+<a name="line1074"></a> * response types of DEFAULT or TEXT may be used, and the response returned will\par
+<a name="line1075"></a> * be the text response.\par
+<a name="line1076"></a> *\par
+<a name="line1077"></a> * On browsers with Mozilla&#39;s draft support for array buffers (Firefox 4, 5),\par
+<a name="line1078"></a> * only response types of DEFAULT, TEXT, and ARRAY_BUFFER may be used, and the\par
+<a name="line1079"></a> * response returned will be either the text response or the Mozilla\par
+<a name="line1080"></a> * implementation of the array buffer response.\par
+<a name="line1081"></a> *\par
+<a name="line1082"></a> * On browsers will full support, any valid response type supported by the\par
+<a name="line1083"></a> * browser may be used, and the response provided by the browser will be\par
+<a name="line1084"></a> * returned.\par
+<a name="line1085"></a> *\par
+<a name="line1086"></a> * @return \{*\} The response.\par
+<a name="line1087"></a> */\par
+<a name="line1088"></a>goog.net.XhrIo.prototype.getResponse = function() \{\par
+<a name="line1089"></a>  /** @preserveTry */\par
+<a name="line1090"></a>  try \{\par
+<a name="line1091"></a>    if (!this.xhr_) \{\par
+<a name="line1092"></a>      return null;\par
+<a name="line1093"></a>    \}\par
+<a name="line1094"></a>    if (&#39;response&#39; in this.xhr_) \{\par
+<a name="line1095"></a>      return this.xhr_.response;\par
+<a name="line1096"></a>    \}\par
+<a name="line1097"></a>    switch (this.responseType_) \{\par
+<a name="line1098"></a>      case goog.net.XhrIo.ResponseType.DEFAULT:\par
+<a name="line1099"></a>      case goog.net.XhrIo.ResponseType.TEXT:\par
+<a name="line1100"></a>        return this.xhr_.responseText;\par
+<a name="line1101"></a>        // DOCUMENT and BLOB don&#39;t need to be handled here because they are\par
+<a name="line1102"></a>        // introduced in the same spec that adds the .response field, and would\par
+<a name="line1103"></a>        // have been caught above.\par
+<a name="line1104"></a>        // ARRAY_BUFFER needs an implementation for Firefox 4, where it was\par
+<a name="line1105"></a>        // implemented using a draft spec rather than the final spec.\par
+<a name="line1106"></a>      case goog.net.XhrIo.ResponseType.ARRAY_BUFFER:\par
+<a name="line1107"></a>        if (&#39;mozResponseArrayBuffer&#39; in this.xhr_) \{\par
+<a name="line1108"></a>          return this.xhr_.mozResponseArrayBuffer;\par
+<a name="line1109"></a>        \}\par
+<a name="line1110"></a>    \}\par
+<a name="line1111"></a>    // Fell through to a response type that is not supported on this browser.\par
+<a name="line1112"></a>    goog.log.error(this.logger_,\par
+<a name="line1113"></a>        &#39;Response type &#39; + this.responseType_ + &#39; is not &#39; +\par
+<a name="line1114"></a>        &#39;supported on this browser&#39;);\par
+<a name="line1115"></a>    return null;\par
+<a name="line1116"></a>  \} catch (e) \{\par
+<a name="line1117"></a>    goog.log.fine(this.logger_, &#39;Can not get response: &#39; + e.message);\par
+<a name="line1118"></a>    return null;\par
+<a name="line1119"></a>  \}\par
+<a name="line1120"></a>\};\par
+<a name="line1121"></a>\par
+<a name="line1122"></a>\par
+<a name="line1123"></a>/**\par
+<a name="line1124"></a> * Get the value of the response-header with the given name from the Xhr object\par
+<a name="line1125"></a> * Will only return correct result when called from the context of a callback\par
+<a name="line1126"></a> * and the request has completed\par
+<a name="line1127"></a> * @param \{string\} key The name of the response-header to retrieve.\par
+<a name="line1128"></a> * @return \{string|undefined\} The value of the response-header named key.\par
+<a name="line1129"></a> */\par
+<a name="line1130"></a>goog.net.XhrIo.prototype.getResponseHeader = function(key) \{\par
+<a name="line1131"></a>  return this.xhr_ &amp;&amp; this.isComplete() ?\par
+<a name="line1132"></a>      this.xhr_.getResponseHeader(key) : undefined;\par
+<a name="line1133"></a>\};\par
+<a name="line1134"></a>\par
+<a name="line1135"></a>\par
+<a name="line1136"></a>/**\par
+<a name="line1137"></a> * Gets the text of all the headers in the response.\par
+<a name="line1138"></a> * Will only return correct result when called from the context of a callback\par
+<a name="line1139"></a> * and the request has completed.\par
+<a name="line1140"></a> * @return \{string\} The value of the response headers or empty string.\par
+<a name="line1141"></a> */\par
+<a name="line1142"></a>goog.net.XhrIo.prototype.getAllResponseHeaders = function() \{\par
+<a name="line1143"></a>  return this.xhr_ &amp;&amp; this.isComplete() ?\par
+<a name="line1144"></a>      this.xhr_.getAllResponseHeaders() : &#39;&#39;;\par
+<a name="line1145"></a>\};\par
+<a name="line1146"></a>\par
+<a name="line1147"></a>\par
+<a name="line1148"></a>/**\par
+<a name="line1149"></a> * Returns all response headers as a key-value map.\par
+<a name="line1150"></a> * Multiple values for the same header key can be combined into one,\par
+<a name="line1151"></a> * separated by a comma and a space.\par
+<a name="line1152"></a> * Note that the native getResponseHeader method for retrieving a single header\par
+<a name="line1153"></a> * does a case insensitive match on the header name. This method does not\par
+<a name="line1154"></a> * include any case normalization logic, it will just return a key-value\par
+<a name="line1155"></a> * representation of the headers.\par
+<a name="line1156"></a> * See: {\field{\*\fldinst{HYPERLINK "http://www.w3.org/TR/XMLHttpRequest/#the-getresponseheader()-method"}}{\fldrslt{\ul\cf1 http://www.w3.org/TR/XMLHttpRequest/#the-getresponseheader()-method}}}\f0\fs22\par
+<a name="line1157"></a> * @return \{!Object.&lt;string, string&gt;\} An object with the header keys as keys\par
+<a name="line1158"></a> *     and header values as values.\par
+<a name="line1159"></a> */\par
+<a name="line1160"></a>goog.net.XhrIo.prototype.getResponseHeaders = function() \{\par
+<a name="line1161"></a>  var headersObject = \{\};\par
+<a name="line1162"></a>  var headersArray = this.getAllResponseHeaders().split(&#39;\\r\\n&#39;);\par
+<a name="line1163"></a>  for (var i = 0; i &lt; headersArray.length; i++) \{\par
+<a name="line1164"></a>    if (goog.string.isEmpty(headersArray[i])) \{\par
+<a name="line1165"></a>      continue;\par
+<a name="line1166"></a>    \}\par
+<a name="line1167"></a>    var keyValue = goog.string.splitLimit(headersArray[i], &#39;: &#39;, 2);\par
+<a name="line1168"></a>    if (headersObject[keyValue[0]]) \{\par
+<a name="line1169"></a>      headersObject[keyValue[0]] += &#39;, &#39; + keyValue[1];\par
+<a name="line1170"></a>    \} else \{\par
+<a name="line1171"></a>      headersObject[keyValue[0]] = keyValue[1];\par
+<a name="line1172"></a>    \}\par
+<a name="line1173"></a>  \}\par
+<a name="line1174"></a>  return headersObject;\par
+<a name="line1175"></a>\};\par
+<a name="line1176"></a>\par
+<a name="line1177"></a>\par
+<a name="line1178"></a>/**\par
+<a name="line1179"></a> * Get the last error message\par
+<a name="line1180"></a> * @return \{goog.net.ErrorCode\} Last error code.\par
+<a name="line1181"></a> */\par
+<a name="line1182"></a>goog.net.XhrIo.prototype.getLastErrorCode = function() \{\par
+<a name="line1183"></a>  return this.lastErrorCode_;\par
+<a name="line1184"></a>\};\par
+<a name="line1185"></a>\par
+<a name="line1186"></a>\par
+<a name="line1187"></a>/**\par
+<a name="line1188"></a> * Get the last error message\par
+<a name="line1189"></a> * @return \{string\} Last error message.\par
+<a name="line1190"></a> */\par
+<a name="line1191"></a>goog.net.XhrIo.prototype.getLastError = function() \{\par
+<a name="line1192"></a>  return goog.isString(this.lastError_) ? this.lastError_ :\par
+<a name="line1193"></a>      String(this.lastError_);\par
+<a name="line1194"></a>\};\par
+<a name="line1195"></a>\par
+<a name="line1196"></a>\par
+<a name="line1197"></a>/**\par
+<a name="line1198"></a> * Adds the last method, status and URI to the message.  This is used to add\par
+<a name="line1199"></a> * this information to the logging calls.\par
+<a name="line1200"></a> * @param \{string\} msg The message text that we want to add the extra text to.\par
+<a name="line1201"></a> * @return \{string\} The message with the extra text appended.\par
+<a name="line1202"></a> * @private\par
+<a name="line1203"></a> */\par
+<a name="line1204"></a>goog.net.XhrIo.prototype.formatMsg_ = function(msg) \{\par
+<a name="line1205"></a>  return msg + &#39; [&#39; + this.lastMethod_ + &#39; &#39; + this.lastUri_ + &#39; &#39; +\par
+<a name="line1206"></a>      this.getStatus() + &#39;]&#39;;\par
+<a name="line1207"></a>\};\par
+<a name="line1208"></a>\par
+<a name="line1209"></a>\par
+<a name="line1210"></a>// Register the xhr handler as an entry point, so that\par
+<a name="line1211"></a>// it can be monitored for exception handling, etc.\par
+<a name="line1212"></a>goog.debug.entryPointRegistry.register(\par
+<a name="line1213"></a>    /**\par
+<a name="line1214"></a>     * @param \{function(!Function): !Function\} transformer The transforming\par
+<a name="line1215"></a>     *     function.\par
+<a name="line1216"></a>     */\par
+<a name="line1217"></a>    function(transformer) \{\par
+<a name="line1218"></a>      goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_ =\par
+<a name="line1219"></a>          transformer(goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_);\par
+<a name="line1220"></a>    \});\par
+</pre>\par
+\par
+\par
+</body>\par
+</html>\par
+}
+ 

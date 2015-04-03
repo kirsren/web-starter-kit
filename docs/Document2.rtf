@@ -1,0 +1,449 @@
+{\rtf1\ansi\ansicpg1252\deff0\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}}
+{\*\generator Msftedit 5.41.21.2510;}\viewkind4\uc1\pard\sa200\sl276\slmult1\lang9\f0\fs22 /**\par
+   TEMP: Change the way pre displays code to prevent stretching the layout.\par
+*/\par
+pre \{\par
+  white-space: pre-wrap;\par
+\}\par
+\par
+/* 2 column layout */\par
+/* column container */\par
+.colmask \{\par
+  position: relative;  /* This fixes the IE7 overflow hidden bug */\par
+  clear: both;\par
+  float: left;\par
+  width: 99%;  /* width of whole page */\par
+  overflow: hidden;  /* This chops off any overhanging divs */\par
+\}\par
+\par
+/* common column settings */\par
+.colleft \{\par
+  float: left;\par
+  width: 100%;\par
+  position: relative;\par
+\}\par
+\par
+.col1,\par
+.col2 \{\par
+  float: left;\par
+  position: relative;\par
+  padding: 0 0 1em 0;\par
+\}\par
+\par
+/* 2 Column (right menu) settings */\par
+.rightmenu \{\par
+  background: white;  /* right column background colour */\par
+\}\par
+\par
+.rightmenu .colleft \{\par
+  right:23%;  /* right column width */\par
+  background: white;  /* left column background colour */\par
+\}\par
+\par
+.rightmenu .col1 \{\par
+  /* left column content width (left column width minus left and\par
+     right padding) */\par
+  width:75%;\par
+  left:24%;  /* (right column width) plus (left column left padding) */\par
+\}\par
+\par
+.rightmenu .col2 \{\par
+  /* right column content width (right column width minus left and\par
+     right padding) */\par
+  width:23%;\par
+  /* (right column width) plus (left column left and right padding)\par
+     plus (right column left padding) */\par
+  left:25%;\par
+\}\par
+\par
+\par
+.g-section,\par
+.g-unit \{\par
+  margin: .5em 0;\par
+\}\par
+\par
+.g-c \{\par
+  padding: 0 2px;\par
+  overflow: hidden;\par
+\}\par
+\par
+.g-c-cell \{\par
+  padding: 0 12px;\par
+  overflow: hidden;\par
+\}\par
+\par
+\par
+/* useful links */\par
+\par
+#useful-links \{\par
+  font-size: 1em;\par
+\}\par
+\par
+#useful-links .title \{\par
+  padding: 4px;\par
+  background-color: #c3d9ff;\par
+  border-radius: 3px;\par
+  -moz-border-radius: 3px;\par
+  -webkit-border-radius: 3px;\par
+\}\par
+\par
+#useful-links a \{\par
+  color: #668cd9;\par
+\}\par
+\par
+#useful-links .title \{\par
+  color: black;\par
+  font-weight: bold;\par
+\}\par
+\par
+#useful-links ol \{\par
+  list-style: none;\par
+  padding: 0;\par
+  margin: 0 2px;\par
+\}\par
+\par
+#useful-links li \{\par
+  padding-top: 5px;\par
+\}\par
+\par
+#description \{\par
+  font-size: 1.05em;\par
+\}\par
+\par
+/* tables */\par
+table \{\par
+  border-collapse: collapse;\par
+  margin-bottom: 6px;\par
+  margin-top: 0;\par
+  width: 100%;\par
+\}\par
+table.google-visualization-orgchart-table,\par
+table.gviz-org-chart \{\par
+  width: auto;\par
+\}\par
+table.horiz-rule \{\par
+  margin: .5em 0 3em;\par
+\}\par
+table.horiz-rule,\par
+table.horiz-rule td \{\par
+  border: 1px solid #E0E7F2;\par
+  border-left: 0;\par
+  border-right: 0;\par
+  vertical-align: top;\par
+  padding: 5px 5px 4px 5px;\par
+  margin: 4px 0;\par
+  font-size: 1em;\par
+  font-family: inherit;\par
+\}\par
+\par
+\par
+.entryDetails table \{\par
+  font-family: inherit;\par
+  font-size: 1em;\par
+\}\par
+\par
+.entryDetails table td \{\par
+  border: 0;\par
+  vertical-align: top;\par
+  padding: 5px 5px 4px 1em;\par
+\}\par
+\par
+div.fullType \{\par
+  display: inline;\par
+\}\par
+\par
+table.horiz-rule td.type-col \{\par
+  text-align: right;\par
+  white-space: nonwrap;\par
+  width: 150px;\par
+\}\par
+\par
+/*\par
+tr.odd \{\par
+  background-color: #f4f6ff;\par
+\}\par
+*/\par
+\par
+tr.even \{\par
+  background-color: #fff;\par
+\}\par
+\par
+.col1 h2 \{\par
+  color: black;\par
+  font-weight: bold;\par
+  font-size: 1.4em;\par
+  margin-top: 1.5em;\par
+  margin-bottom: 0.2em;\par
+\}\par
+\par
+.col1 h2.g-first \{\par
+  margin-top: 0;\par
+\}\par
+\par
+.col1 h3 \{\par
+  margin-bottom: 2px;\par
+  color: #000;\par
+\}\par
+\par
+.fn-name a \{\par
+  color: #3355cc;\par
+  font-weight: bold;\par
+\}\par
+\par
+\par
+/* various other formatters */\par
+\par
+#title \{\par
+  border-bottom: 1px solid #e9e9e9;\par
+\}\par
+\par
+#title .fn \{\par
+  font-size: 35px;\par
+  font-weight: bold;\par
+  color: black;\par
+\}\par
+\par
+.fn-constructor \{\par
+  font-size: 1.5em;\par
+  color: black;\par
+\}\par
+\par
+.fn-constructor a \{\par
+  color: #668CD9;\par
+\}\par
+\par
+\par
+.code-label \{\par
+  font-weight: bold;\par
+  position: static;\par
+\}\par
+\par
+.param-type \{\par
+  color: #008000;\par
+  font-weight: bold;\par
+\}\par
+\par
+.code-sample \{\par
+  font-size: 1em;\par
+\}\par
+\par
+.desc \{\par
+  font-size: 1.1em;\par
+  margin: 2px 0;\par
+\}\par
+\par
+/* rules for current page highlighting */\par
+\par
+#abstractdragdrop #abstractdragdrop_link,\par
+#dragdrop #dragdrop_link,\par
+#dragdropevent #dragdropevent_link \{\par
+  background-color: #668cd9;\par
+  color: white;\par
+\}\par
+\par
+\par
+.entry img \{\par
+  width: 19px;\par
+  height: 16px;\par
+\}\par
+\par
+th.argHeader \{\par
+  padding-top: 10px;\par
+  padding-bottom: 5px;\par
+\}\par
+\par
+\par
+.ac-row .goog-tree-icon \{\par
+  background-image: url(../images/tree.png);\par
+\}\par
+\par
+.goog-checkbox-checked \{\par
+  background-image: url(../images/check.gif);\par
+  height: 7px;\par
+  width: 7px;\par
+\}\par
+\par
+.goog-checkbox-unchecked \{\par
+  background-image:url(../images/check-outline.gif);\par
+  height: 10px;\par
+  width: 10px;\par
+\}\par
+\par
+div#acls \{\par
+  padding-left: 10px;\par
+  padding-top: 5px;\par
+  padding-bottom: 10px;\par
+\}\par
+\par
+.detailsSection \{\par
+  padding-top: 10px;\par
+\}\par
+\par
+.class-details \{\par
+  font-size: 12px;\par
+\}\par
+\par
+.entryName \{\par
+  font-weight: bold;\par
+  font-size: 1.2em;\par
+\}\par
+\par
+.detailsSection .entryName \{\par
+  font-weight: normal;\par
+\}\par
+\par
+.entryName .args \{\par
+  color: #888;\par
+  font-weight: normal;\par
+  margin-left: 4px;\par
+\}\par
+\par
+.entryDetails,\par
+.entryOverview \{\par
+  margin: 3px 0 0 20px;\par
+\}\par
+\par
+.entryNamespace \{\par
+  font-weight: normal;\par
+  font-size: 11px;\par
+  color: #888;\par
+\}\par
+\par
+.fullType \{\par
+  white-space: nowrap;\par
+\}\par
+\par
+.type \{\par
+  color: #008800;\par
+  font-size: 95%;\par
+\}\par
+\par
+.type a \{\par
+  color: #008800;\par
+\}\par
+\par
+.access \{\par
+  width: 6px;\par
+  padding: 0px !important;\par
+  border-right: 1px solid #E0E7F2;\par
+  background: green; /** public mode only. **/\par
+  opacity: 0.6;\par
+\}\par
+\par
+.protected .access \{\par
+  background: goldenrod;\par
+\}\par
+\par
+.private .access \{\par
+  background: red;\par
+\}\par
+\par
+.legend \{\par
+  padding-right: 10px;\par
+  float: right;\par
+  text-align: top;\par
+  line-height: 1;\par
+\}\par
+\par
+.key \{\par
+  display: inline-block;\par
+  width: 6px;\par
+  height: .8em;\par
+  margin: .3em 3px 0 5px;\par
+  vertical-align: top;\par
+\}\par
+\par
+.key-bg \{\par
+  display: inline-block;\par
+  margin: 0 3px 0 5px;\par
+  padding: 1px;\par
+  border-radius: 3px;\par
+  -webkit-border-radius: 3px;\par
+  -moz-border-radius: 3px;\par
+\}\par
+\par
+.key-bg input \{\par
+  margin: 0;\par
+\}\par
+\par
+.publickey,\par
+tr.funcs-hidden-public td.access \{\par
+  border: 1px outset green;\par
+  background: green;\par
+  background: rgba(0, 100, 0, .6);\par
+\}\par
+\par
+.protectedkey,\par
+tr.funcs-hidden-protected td.access \{\par
+  border: 1px outset goldenrod;\par
+  background: goldenrod;\par
+  background: rgba(218, 165, 32, .6);\par
+\}\par
+\par
+.privatekey,\par
+tr.funcs-hidden-private td.access \{\par
+  border: 1px outset red;\par
+  background: red;\par
+  background: rgba(255, 0, 0, .6);\par
+\}\par
+\par
+tr.funcs-hidden-public td.access,\par
+tr.funcs-hidden-protected td.access,\par
+tr.funcs-hidden-private td.access \{\par
+  border: 0;\par
+\}\par
+\par
+/* The legend checkboxes use these to collapse rows by their accessibility. */\par
+.func-hide-publickey .public,\par
+.func-hide-protectedkey .protected,\par
+.func-hide-privatekey .private \{\par
+  display: none;\par
+\}\par
+\par
+/* Initially, these feedback rows should be hidden. */\par
+.funcs-hidden-public,\par
+.funcs-hidden-protected,\par
+.funcs-hidden-private \{\par
+  display: none;\par
+\}\par
+\par
+.funcs-hidden-public td.publickey-toggle,\par
+.funcs-hidden-protected td.protectedkey-toggle,\par
+.funcs-hidden-private td.privatekey-toggle \{\par
+  /*background-image: url('../images/plus.png');\par
+  background-repeat: no-repeat;\par
+  background-position: 5px center;*/\par
+  padding-right: 0;\par
+  padding-left: 10px;\par
+  cursor: pointer;\par
+\}\par
+\par
+/* And this will make them visible when the functions/props are hidden. */\par
+.func-hide-publickey .funcs-hidden-public,\par
+.func-hide-protectedkey .funcs-hidden-protected,\par
+.func-hide-privatekey .funcs-hidden-private \{\par
+  display: table-row;\par
+\}\par
+\par
+.prettyprint \{\par
+  font-size: 14px !important;\par
+\}\par
+\par
+pre.prettyprint \{\par
+  display: block;\par
+  margin: 2px;\par
+  padding: 4px;\par
+  background: #EEEEEE;\par
+  border: 1px solid #CCCCCC;\par
+\}\par
+\par
+.view-code \{\par
+  width: 50px;\par
+  text-align: right;\par
+\}\par
+\par
+.view-code a \{\par
+  color: #668CD9;\par
+\}\par
+}
+ 
